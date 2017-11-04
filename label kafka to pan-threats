@@ -1,0 +1,94 @@
+"""
+Process PAN threat kafka source and add artifacts with 'pan-threats' label
+"""
+
+import phantom.rules as phantom
+import json
+from datetime import datetime, timedelta
+
+##############################
+# Start - Global Code Block
+
+import ast
+
+# End - Global Code block
+##############################
+
+def on_start(container):
+    phantom.debug('on_start() called')
+    raw_messages = phantom.collect(container, "artifact:*.cef.message")
+    artifact_id = phantom.collect(container, "artifact:*.id")
+    phantom.debug('Number of artifacts is {}'.format(len(raw_messages)))
+    for raw_message in raw_messages:
+        phantom.debug('Kafka message of type {} is {}'.format(type(raw_message), raw_message))    
+        if raw_message:            
+            message = raw_message.replace('\\', '')
+            message = ast.literal_eval(message)
+                
+        phantom.debug('Kafka message of type {} is {}'.format(type(message), message))
+    
+        """
+        {'ThreatType': 'vulnerability', 'DstIP': '1.1.1.1', 'Severity': 'high', 'URL': 'iolafinancialgroup.com/', 'App': 'web-browsing', 'Rule': 'inbound web', 'ThreatName': 'Joomla HTTP User Agent Object Injection Vulnerability(38519)', 
+        'Action': 'reset-server', 'SrcIP': '2.2.2.2', 'DstPort': '80', 'DstZone': 'dmz', 'SrcZone': 'isp1'}
+        """
+        raw = {}
+        cef = {}
+        field_mapping = {}
+        cef['src'] = message['SrcIP']
+        cef['dst'] = message['DstIP']
+        cef['cs1'] = message['Severity']
+        cef['cs1Label'] = 'Severity'
+        cef['cs2'] = message['ThreatType']
+        cef['cs2Label'] = 'ThreatType'
+        cef['cs3'] = message['ThreatName']
+        cef['cs3Label'] = 'ThreatName'
+        label = 'THREAT'
+        # name = 'THREAT Artifcats'
+        name = cef['cs1'] + ' : ' + cef['cs2'] + ' : ' + cef['src'] + ' -> ' + cef['dst']
+        """
+        severity = message['Severity']
+        if 'critical' in severity:
+            severity = 'high'
+        elif 'high' in severity:
+            severity = 'medium'
+        else:
+            severity = 'low'
+        """
+        artifact_type = 'host'   
+        field_mapping['src'] = ['ip']
+        field_mapping['dst'] = ['ip'] 
+        phantom.debug('src {} dst {} severity {} ThreatType: {} ThreatName: {}'.format(cef['src'], cef['dst'], 'medium', cef['cs2'], cef['cs3']))
+        phantom.add_artifact(container, raw, cef, label, name, 'medium', None, artifact_type, field_mapping)
+    for id in artifact_id:
+        success = phantom.delete_artifact(artifact_id=id)
+        phantom.debug('phantom.delete_artifact {} results: success: {} '.format(id, success))
+    set_label_1(container=container) 
+    
+    return
+
+def set_label_1(action=None, success=None, container=None, results=None, handle=None, filtered_artifacts=None, filtered_results=None):
+    phantom.debug('set_label_1() called')
+
+    # set container properties for: label
+    update_data = {
+        "label" : "pan-threats",
+    }
+
+    phantom.update(container, update_data)
+
+    return
+
+def on_finish(container, summary):
+    phantom.debug('on_finish() called')
+    # This function is called after all actions are completed.
+    # summary of all the action and/or all detals of actions 
+    # can be collected here.
+
+    # summary_json = phantom.get_summary()
+    # if 'result' in summary_json:
+        # for action_result in summary_json['result']:
+            # if 'action_run_id' in action_result:
+                # action_results = phantom.get_action_results(action_run_id=action_result['action_run_id'], result_data=False, flatten=False)
+                # phantom.debug(action_results)
+
+    return
