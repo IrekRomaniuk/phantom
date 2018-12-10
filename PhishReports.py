@@ -1,5 +1,5 @@
 """
-new version og 'phish' playbook
+new version of 'phish' playbook
 """
 
 import phantom.rules as phantom
@@ -15,7 +15,7 @@ from urlparse import urlparse
 import html.parser
 import string
 
-EXCLUDED=['commonwealth.com','w3.org','microsoft.com']
+EXCLUDED=['w3.org','microsoft.com']
 
 def test_params(container, datapath, key_name):
     params = []
@@ -40,10 +40,6 @@ def decodev2 (rewrittenurl):
 
 def on_start(container):
     phantom.debug('on_start() called')
-    
-    #test with phishreports ID: 545385 for email positive breaches
-    
-    # one to test with attachemnt 547146
     
     #vault = test_params(container, 'artifact:*.cef.vaultId','vault')
     email = test_params(container, 'artifact:*.cef.fromEmail','email')
@@ -72,18 +68,7 @@ def lookup_email_4(action=None, success=None, container=None, results=None, hand
     phantom.debug('email: {}'.format(email))
     
     parameters = []
-    """
-    # build parameters list for 'lookup_email_4' call
-    for container_item in container_data[0]:
-        phantom.debug('item: {}'.format(container_item))
-        if container_item[0]:
-            phantom.debug('email: {}'.format(container_item[0]))
-            parameters.append({
-                'email': re.search(r'<(.*?)>', container_item[0]).group(1),
-                # context (artifact id) is added to associate results with the artifact
-                'context': {'artifact_id': container_item[1]},
-            })
-    """ 
+
     parameters.append({'email': re.search(r'<(.*?)>', email).group(1)})    
     phantom.act("lookup email", parameters=parameters, app={ "name": 'Have I Been Pwned' }, name="lookup_email_4", callback=decision_1)
 
@@ -228,12 +213,12 @@ def send_email_1(action=None, success=None, container=None, results=None, handle
     phantom.debug('{}'.format(body))   
     
     if 'romaniuk' in email.lower():
-        to="iromaniuk@commonwealth.com"
+        to="me@example.com"
     else:
-        to="iromaniuk@commonwealth.com"  #, JVicente@COMMONWEALTH.COM, PCarr@COMMONWEALTH.COM, MJanielis@COMMONWEALTH.COM, PSchuyler@COMMONWEALTH.COM, bclark@COMMONWEALTH.COM
+        to="me@example.com"
             
     parameters.append({
-                'from': "phantom-dev@commonwealth.com",
+                'from': "phantom-dev@example.com",
                 'to': to,
                 'subject': 'PhishReports for ' + email + message,
                 'body': body,
@@ -260,19 +245,5 @@ def join_send_email_1(action=None, success=None, container=None, results=None, h
 
 def on_finish(container, summary):
     phantom.debug('on_finish() called')
-    #formatted_data = phantom.get_format_data(name="format_1")
-
-    #phantom.debug("Retrieved formatted data is: {}".format(formatted_data))
-    
-    # This function is called after all actions are completed.
-    # summary of all the action and/or all detals of actions 
-    # can be collected here.
-
-    # summary_json = phantom.get_summary()
-    # if 'result' in summary_json:
-        # for action_result in summary_json['result']:
-            # if 'action_run_id' in action_result:
-                # action_results = phantom.get_action_results(action_run_id=action_result['action_run_id'], result_data=False, flatten=False)
-                # phantom.debug(action_results)
 
     return
